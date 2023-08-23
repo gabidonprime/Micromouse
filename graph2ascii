@@ -1,0 +1,104 @@
+#pragma once
+
+#include "Graph.hpp"
+#include <iostream>
+
+namespace mtrn3100 {
+
+// COMPLETE THIS FUNCTION.
+template <typename N, typename E>
+char* graph2ascii(Graph<N, E> const& g) {
+    // 3 x 3 maze.
+    int const numRows = 3;
+    int const numCols = 3;
+
+    // Helper function to convert between (rows, cols) and number of chars.
+    auto row2charPos = [](int const r) { return r * 2 + 1; };
+    auto col2charPos = [](int const c) { return c * 4 + 2; };
+
+    int const numCharRows = row2charPos(numRows);      // 7 characters.
+    int const numCharCols = col2charPos(numCols);      // 14 characters.
+    char* maze = new char[numCharCols * numCharRows];  // 98 bytes is needed to represent 3 x 3 maze.
+
+    // Helper function to access the maze with a 2D model.
+    auto maze2d = [&maze, &numCharCols](unsigned const r, unsigned const c) -> char& {
+        return maze[r * numCharCols + c];
+    };
+
+    // Initialise the maze values.
+    for (int i = 0; i < numCharCols * numCharRows; i++) {
+        maze[i] = ' ';
+    }
+
+    // Do new lines.
+    for (int j = 0; j < numCharRows; j++) {
+        maze2d(j, numCharCols - 1) = '\n';
+    }
+
+    // Terminate the string.
+    maze2d(numCharRows - 1, numCharCols - 1) = '\0';
+
+    // Do initial walls.
+    for (int i = 0; i < numCharRows; i++) {
+        if (i % 2 != 0) {
+            for (int j = 0; j <= numCharCols -2; j++) {
+                if (j % 4 == 0) {
+                    maze2d(i,j) = '|';
+                }
+            }
+        }
+    }
+
+    for (int j = 0; j < numCharCols - 2; j++) {
+        if (j % 4 != 0) {
+            for (int i = 0; i <= numCharRows - 1; i++) {
+                if (i % 2 == 0) {
+                    maze2d(i, j) = '-';
+                }
+            }
+        }
+    }
+
+    //Do internal walls (remove any walles between connected nodes).
+    for (auto const& edge : g.edges()) {
+        auto const& source = mtrn3100::get<0>(edge.value);
+        auto const& dest = mtrn3100::get<1>(edge.value);
+
+        // Get the row and column of the from and to nodes.
+        // Horizontal
+        if (abs(source - dest) == 1) {
+            int row = (source - 1) / 3 * 2 + 1;
+            int col = (source - 1) % 3 + 1;
+            // If source is less than dest, then remove wall to right
+            if (source < dest) {
+                maze2d(row, col * 4) = ' '; 
+            } else { // Else remove wall to left
+                maze2d(row, col * 4 - 4) = ' ';
+            }
+        } else { // Vertical 
+            int row = (source - 1) / 3 * 2 + 1;
+            int col = (source - 1) % 3 + 1;
+            // If source is less than dest, then remove wall below
+            if (source < dest) {
+                for (int i = 0; i <= 3; i++) {
+                    int col_4 = (col * 4) - 4;
+                    maze2d(row + 1, col_4 + i) = ' ';
+                }
+            } else {
+                // Else remove wall above
+                for (int i = 0; i <= 3; i++) {
+                    int col_4 = (col * 4) - 4;
+                    maze2d(row - 1, col_4 + i) = ' ';
+                }
+            }
+        }     
+
+    }
+
+    // For debugging. Don't forget to include iostream.
+    std::cout << maze << std::endl;
+
+    return maze;
+}
+
+}  // namespace mtrn3100
